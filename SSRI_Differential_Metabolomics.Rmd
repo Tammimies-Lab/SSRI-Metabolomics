@@ -1,0 +1,635 @@
+---
+title: "SSRI – Differential Metabolomics Analysis"
+author: "Abishek Arora"
+date: "10/06/2025"
+---
+
+# Differential Metabolomics Analysis
+
+Mass spectrometry was performed on samples for cell lines exposed to fluoxetine hydrochloride (FH), citalopram hydrobromide (CH), sertraline hydrochloride (SH) and paroxetine hydrochloride (PH) for 5 and 28 days. The cell lines that were a part of this study were CTRL9II, ASD12BI, ASD17AII and AF22. Metabolite concentrations are reported in micromolar (µM). Differential metabolomics analysis was performed using a mixed linear model as stated in the sections that follow. For more information about the methods applied, please refer to the paper.
+
+## Fluoxetine hydrochloride (FH)
+
+### Day 5
+
+Comparisons were made based on treatment groups of fluoxetine hydrochloride exposure, namely "Control" and "FH" at Day 5, using a mixed linear model followed by correction for multiple comparisons using the FDR method
+
+```{r}
+# Load package libraries and import the dataset to be analysed.
+rm(list = ls())
+library("tidyverse")
+library("nlme")
+FH_metabolome <- read.csv("add file path to metabo_conc.csv here")
+FH_metabolome <- FH_metabolome %>% filter(diff_time == "Day 5", exp == c("Control", "FH"))
+FH_metabolome$exp <- factor(FH_metabolome$exp, levels = c("Control", "FH"))
+list_metab <- split(FH_metabolome, FH_metabolome$metabo)
+
+results_df <- read.csv("add file path to metabo_list.csv here", row.names=1)
+
+# Load function for preparing dataframe of the model outputs:
+merge.all <- function(x, ..., by = "row.names") {
+  L <- list(...)
+  for (i in seq_along(L)) {
+    x <- merge(x, L[[i]], by = by)
+    rownames(x) <- x$Row.names
+    x$Row.names <- NULL
+  }
+  return(x)
+}
+```
+
+```{r}
+# Define the linear model and loop through the summary results.
+results <- vector(mode = "list", length = 189)
+for (i in 1:length(list_metab)) {
+  tryCatch({
+  model <- lme(metabo_conc ~ exp, random = ~ 1 | cell_line, data = list_metab[[i]], na.action = na.omit)
+  results[[i]] <- summary(model)
+  }, error = function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+# Aggregate the p values from the summary results for the linear model.
+pvalues <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  pvalues[[i]] <- df[2,5]
+}
+
+names(pvalues) <- names(list_metab)
+summary_res <- unlist(pvalues)
+summary_res <- as.data.frame(summary_res, add.rownames = True)
+
+summary_results <- merge(x = results_df, y = summary_res, by = 'row.names', all.x = TRUE)
+summary_results <- summary_results %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+
+# Aggregate the estimates from the summary results for the linear model.
+ests <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  ests[[i]] <- df[2,1]
+}
+
+names(ests) <- names(list_metab)
+est_res <- unlist(ests)
+est_res <- as.data.frame(est_res, add.rownames = True)
+
+est_res <- merge(x = results_df, y = est_res, by = 'row.names', all.x = TRUE)
+est_res <- est_res %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+est_res[,1] <- NULL
+
+# Perform correction for multiple comparisons using the FDR method.
+p.adj <- p.adjust(summary_results$summary_res, method = "fdr", n = length(summary_results$summary_res))
+names(p.adj) <- names(list_metab)
+p.adj.df <- as.data.frame(p.adj)
+
+# Combine all dataframes for final result.
+final_res <- merge.all(summary_results, est_res, p.adj.df)
+colnames(final_res) <- c("Category", "p value", "Estimate", "Adj. p value")
+write.csv(final_res,"add file path for desired folder to save results here", row.names = TRUE)
+```
+
+### Day 28
+
+Comparisons were made based on treatment groups of fluoxetine hydrochloride exposure, namely "Control" and "FH" at Day 28, using a mixed linear model followed by correction for multiple comparisons using the FDR method
+
+```{r}
+# Load package libraries and import the dataset to be analysed.
+rm(list = ls())
+library("tidyverse")
+FH_metabolome <- read.csv("add file path to metabo_conc.csv here")
+FH_metabolome <- FH_metabolome %>% filter(diff_time == "Day 28", exp == c("Control", "FH"))
+FH_metabolome$exp <- factor(FH_metabolome$exp, levels = c("Control", "FH"))
+list_metab <- split(FH_metabolome, FH_metabolome$metabo)
+
+results_df <- read.csv("add file path to metabo_list.csv here", row.names=1)
+
+# Load function for preparing dataframe of the model outputs:
+merge.all <- function(x, ..., by = "row.names") {
+  L <- list(...)
+  for (i in seq_along(L)) {
+    x <- merge(x, L[[i]], by = by)
+    rownames(x) <- x$Row.names
+    x$Row.names <- NULL
+  }
+  return(x)
+}
+```
+
+```{r}
+# Define the linear model and loop through the summary results.
+results <- vector(mode = "list", length = 189)
+for (i in 1:length(list_metab)) {
+  tryCatch({
+    model <- lme(metabo_conc ~ exp, random = ~ 1 | cell_line, data = list_metab[[i]], na.action = na.omit)
+    results[[i]] <- summary(model)
+  }, error = function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+# Aggregate the p values from the summary results for the linear model.
+pvalues <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  pvalues[[i]] <- df[2,5]
+}
+
+names(pvalues) <- names(list_metab)
+summary_res <- unlist(pvalues)
+summary_res <- as.data.frame(summary_res, add.rownames = True)
+
+summary_results <- merge(x = results_df, y = summary_res, by = 'row.names', all.x = TRUE)
+summary_results <- summary_results %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+
+# Aggregate the estimates from the summary results for the linear model.
+ests <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  ests[[i]] <- df[2,1]
+}
+
+names(ests) <- names(list_metab)
+est_res <- unlist(ests)
+est_res <- as.data.frame(est_res, add.rownames = True)
+
+est_res <- merge(x = results_df, y = est_res, by = 'row.names', all.x = TRUE)
+est_res <- est_res %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+est_res[,1] <- NULL
+
+# Perform correction for multiple comparisons using the FDR method.
+p.adj <- p.adjust(summary_results$summary_res, method = "fdr", n = length(summary_results$summary_res))
+names(p.adj) <- names(list_metab)
+p.adj.df <- as.data.frame(p.adj)
+
+# Combine all dataframes for final result.
+final_res <- merge.all(summary_results, est_res, p.adj.df)
+colnames(final_res) <- c("Category", "p value", "Estimate", "Adj. p value")
+write.csv(final_res,"add file path for desired folder to save results here", row.names = TRUE)
+```
+
+
+## Citalopram
+
+### Day 5
+
+Comparisons were made based on treatment groups of citalopram hydrobromide exposure, namely "Control" and "CH" at day 5, using a mixed linear model followed by correction for multiple comparisons using the FDR method
+
+```{r}
+# Load package libraries and import the dataset to be analysed.
+rm(list = ls())
+library("tidyverse")
+CH_metabolome <- read.csv("add file path to metabo_conc.csv here")
+CH_metabolome <- CH_metabolome %>% filter(diff_time == "Day 5", exp == c("Control", "CH"))
+CH_metabolome$exp <- factor(CH_metabolome$exp, levels = c("Control", "CH"))
+list_metab <- split(CH_metabolome, CH_metabolome$metabo)
+
+results_df <- read.csv("add file path to metabo_list.csv here", row.names=1)
+
+# Load function for preparing dataframe of the model outputs:
+merge.all <- function(x, ..., by = "row.names") {
+  L <- list(...)
+  for (i in seq_along(L)) {
+    x <- merge(x, L[[i]], by = by)
+    rownames(x) <- x$Row.names
+    x$Row.names <- NULL
+  }
+  return(x)
+}
+```
+
+```{r}
+# Define the linear model and loop through the summary results.
+results <- vector(mode = "list", length = 189)
+for (i in 1:length(list_metab)) {
+  tryCatch({
+    model <- lme(metabo_conc ~ exp, random = ~ 1 | cell_line, data = list_metab[[i]], na.action = na.omit)
+    results[[i]] <- summary(model)
+  }, error = function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+# Aggregate the p values from the summary results for the linear model.
+pvalues <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  pvalues[[i]] <- df[2,5]
+}
+
+names(pvalues) <- names(list_metab)
+summary_res <- unlist(pvalues)
+summary_res <- as.data.frame(summary_res, add.rownames = True)
+
+summary_results <- merge(x = results_df, y = summary_res, by = 'row.names', all.x = TRUE)
+summary_results <- summary_results %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+
+# Aggregate the estimates from the summary results for the linear model.
+ests <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  ests[[i]] <- df[2,1]
+}
+
+names(ests) <- names(list_metab)
+est_res <- unlist(ests)
+est_res <- as.data.frame(est_res, add.rownames = True)
+
+est_res <- merge(x = results_df, y = est_res, by = 'row.names', all.x = TRUE)
+est_res <- est_res %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+est_res[,1] <- NULL
+
+# Perform correction for multiple comparisons using the FDR method.
+p.adj <- p.adjust(summary_results$summary_res, method = "fdr", n = length(summary_results$summary_res))
+names(p.adj) <- names(list_metab)
+p.adj.df <- as.data.frame(p.adj)
+
+# Combine all dataframes for final result.
+final_res <- merge.all(summary_results, est_res, p.adj.df)
+colnames(final_res) <- c("Category", "p value", "Estimate", "Adj. p value")
+write.csv(final_res,"add file path for desired folder to save results here", row.names = TRUE)
+```
+
+### Day 28
+
+Comparisons were made based on treatment groups of citalopram hydrobromide exposure, namely "Control" and "CH" at day 28, using a mixed linear model followed by correction for multiple comparisons using the FDR method
+
+```{r}
+# Load package libraries and import the dataset to be analysed.
+rm(list = ls())
+library("tidyverse")
+CH_metabolome <- read.csv("add file path to metabo_conc.csv here")
+CH_metabolome <- CH_metabolome %>% filter(diff_time == "Day 28", exp == c("Control", "CH"))
+CH_metabolome$exp <- factor(CH_metabolome$exp, levels = c("Control", "CH"))
+list_metab <- split(CH_metabolome, CH_metabolome$metabo)
+
+results_df <- read.csv("add file path to metabo_list.csv here", row.names=1)
+
+# Load function for preparing dataframe of the model outputs:
+merge.all <- function(x, ..., by = "row.names") {
+  L <- list(...)
+  for (i in seq_along(L)) {
+    x <- merge(x, L[[i]], by = by)
+    rownames(x) <- x$Row.names
+    x$Row.names <- NULL
+  }
+  return(x)
+}
+```
+
+```{r}
+# Define the linear model and loop through the summary results.
+results <- vector(mode = "list", length = 189)
+for (i in 1:length(list_metab)) {
+  tryCatch({
+    model <- lme(metabo_conc ~ exp, random = ~ 1 | cell_line, data = list_metab[[i]], na.action = na.omit)
+    results[[i]] <- summary(model)
+  }, error = function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+# Aggregate the p values from the summary results for the linear model.
+pvalues <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  pvalues[[i]] <- df[2,5]
+}
+
+names(pvalues) <- names(list_metab)
+summary_res <- unlist(pvalues)
+summary_res <- as.data.frame(summary_res, add.rownames = True)
+
+summary_results <- merge(x = results_df, y = summary_res, by = 'row.names', all.x = TRUE)
+summary_results <- summary_results %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+
+# Aggregate the estimates from the summary results for the linear model.
+ests <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  ests[[i]] <- df[2,1]
+}
+
+names(ests) <- names(list_metab)
+est_res <- unlist(ests)
+est_res <- as.data.frame(est_res, add.rownames = True)
+
+est_res <- merge(x = results_df, y = est_res, by = 'row.names', all.x = TRUE)
+est_res <- est_res %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+est_res[,1] <- NULL
+
+# Perform correction for multiple comparisons using the FDR method.
+p.adj <- p.adjust(summary_results$summary_res, method = "fdr", n = length(summary_results$summary_res))
+names(p.adj) <- names(list_metab)
+p.adj.df <- as.data.frame(p.adj)
+
+# Combine all dataframes for final result.
+final_res <- merge.all(summary_results, est_res, p.adj.df)
+colnames(final_res) <- c("Category", "p value", "Estimate", "Adj. p value")
+write.csv(final_res,"add file path for desired folder to save results here", row.names = TRUE)
+```
+
+## Sertraline
+
+### Day 5
+
+Comparisons were made based on treatment groups of sertraline hydrochloride exposure, namely "Control" and "SH" at day 5, using a mixed linear model followed by correction for multiple comparisons using the FDR method
+
+```{r}
+# Load package libraries and import the dataset to be analysed.
+rm(list = ls())
+library("tidyverse")
+SH_metabolome <- read.csv("add file path to metabo_conc.csv here")
+SH_metabolome <- SH_metabolome %>% filter(diff_time == "Day 5", exp == c("Control", "SH"))
+SH_metabolome$exp <- factor(SH_metabolome$exp, levels = c("Control", "SH"))
+list_metab <- split(SH_metabolome, SH_metabolome$metabo)
+
+results_df <- read.csv("add file path to metabo_list.csv here", row.names=1)
+
+# Load function for preparing dataframe of the model outputs:
+merge.all <- function(x, ..., by = "row.names") {
+  L <- list(...)
+  for (i in seq_along(L)) {
+    x <- merge(x, L[[i]], by = by)
+    rownames(x) <- x$Row.names
+    x$Row.names <- NULL
+  }
+  return(x)
+}
+```
+
+```{r}
+# Define the linear model and loop through the summary results.
+results <- vector(mode = "list", length = 189)
+for (i in 1:length(list_metab)) {
+  tryCatch({
+    model <- lme(metabo_conc ~ exp, random = ~ 1 | cell_line, data = list_metab[[i]], na.action = na.omit)
+    results[[i]] <- summary(model)
+  }, error = function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+# Aggregate the p values from the summary results for the linear model.
+pvalues <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  pvalues[[i]] <- df[2,5]
+}
+
+names(pvalues) <- names(list_metab)
+summary_res <- unlist(pvalues)
+summary_res <- as.data.frame(summary_res, add.rownames = True)
+
+summary_results <- merge(x = results_df, y = summary_res, by = 'row.names', all.x = TRUE)
+summary_results <- summary_results %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+
+# Aggregate the estimates from the summary results for the linear model.
+ests <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  ests[[i]] <- df[2,1]
+}
+
+names(ests) <- names(list_metab)
+est_res <- unlist(ests)
+est_res <- as.data.frame(est_res, add.rownames = True)
+
+est_res <- merge(x = results_df, y = est_res, by = 'row.names', all.x = TRUE)
+est_res <- est_res %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+est_res[,1] <- NULL
+
+# Perform correction for multiple comparisons using the FDR method.
+p.adj <- p.adjust(summary_results$summary_res, method = "fdr", n = length(summary_results$summary_res))
+names(p.adj) <- names(list_metab)
+p.adj.df <- as.data.frame(p.adj)
+
+# Combine all dataframes for final result.
+final_res <- merge.all(summary_results, est_res, p.adj.df)
+colnames(final_res) <- c("Category", "p value", "Estimate", "Adj. p value")
+write.csv(final_res,"add file path for desired folder to save results here", row.names = TRUE)
+```
+
+### Day 28
+
+Comparisons were made based on treatment groups of sertraline hydrochloride exposure, namely "Control" and "SH" at day 28, using a mixed linear model followed by correction for multiple comparisons using the FDR method
+
+```{r}
+# Load package libraries and import the dataset to be analysed.
+rm(list = ls())
+library("tidyverse")
+SH_metabolome <- read.csv("add file path to metabo_conc.csv here")
+SH_metabolome <- SH_metabolome %>% filter(diff_time == "Day 28", exp == c("Control", "SH"))
+SH_metabolome$exp <- factor(SH_metabolome$exp, levels = c("Control", "SH"))
+list_metab <- split(SH_metabolome, SH_metabolome$metabo)
+
+results_df <- read.csv("add file path to metabo_list.csv here", row.names=1)
+
+# Load function for preparing dataframe of the model outputs:
+merge.all <- function(x, ..., by = "row.names") {
+  L <- list(...)
+  for (i in seq_along(L)) {
+    x <- merge(x, L[[i]], by = by)
+    rownames(x) <- x$Row.names
+    x$Row.names <- NULL
+  }
+  return(x)
+}
+```
+
+```{r}
+# Define the linear model and loop through the summary results.
+results <- vector(mode = "list", length = 189)
+for (i in 1:length(list_metab)) {
+  tryCatch({
+    model <- lme(metabo_conc ~ exp, random = ~ 1 | cell_line, data = list_metab[[i]], na.action = na.omit)
+    results[[i]] <- summary(model)
+  }, error = function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+# Aggregate the p values from the summary results for the linear model.
+pvalues <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  pvalues[[i]] <- df[2,5]
+}
+
+names(pvalues) <- names(list_metab)
+summary_res <- unlist(pvalues)
+summary_res <- as.data.frame(summary_res, add.rownames = True)
+
+summary_results <- merge(x = results_df, y = summary_res, by = 'row.names', all.x = TRUE)
+summary_results <- summary_results %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+
+# Aggregate the estimates from the summary results for the linear model.
+ests <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  ests[[i]] <- df[2,1]
+}
+
+names(ests) <- names(list_metab)
+est_res <- unlist(ests)
+est_res <- as.data.frame(est_res, add.rownames = True)
+
+est_res <- merge(x = results_df, y = est_res, by = 'row.names', all.x = TRUE)
+est_res <- est_res %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+est_res[,1] <- NULL
+
+# Perform correction for multiple comparisons using the FDR method.
+p.adj <- p.adjust(summary_results$summary_res, method = "fdr", n = length(summary_results$summary_res))
+names(p.adj) <- names(list_metab)
+p.adj.df <- as.data.frame(p.adj)
+
+# Combine all dataframes for final result.
+final_res <- merge.all(summary_results, est_res, p.adj.df)
+colnames(final_res) <- c("Category", "p value", "Estimate", "Adj. p value")
+write.csv(final_res,"add file path for desired folder to save results here", row.names = TRUE)
+```
+
+## Paroxetine
+
+### Day 5
+
+Comparisons were made based on treatment groups of paroxetine hydrochloride exposure, namely "Control" and "PH" at day 5, using a mixed linear model followed by correction for multiple comparisons using the FDR method
+
+```{r}
+# Load package libraries and import the dataset to be analysed.
+rm(list = ls())
+library("tidyverse")
+PH_metabolome <- read.csv("add file path to metabo_conc.csv here")
+PH_metabolome <- PH_metabolome %>% filter(diff_time == "Day 5", exp == c("Control", "PH"))
+PH_metabolome$exp <- factor(PH_metabolome$exp, levels = c("Control", "PH"))
+list_metab <- split(PH_metabolome, PH_metabolome$metabo)
+
+results_df <- read.csv("add file path to metabo_list.csv here", row.names=1)
+
+# Load function for preparing dataframe of the model outputs:
+merge.all <- function(x, ..., by = "row.names") {
+  L <- list(...)
+  for (i in seq_along(L)) {
+    x <- merge(x, L[[i]], by = by)
+    rownames(x) <- x$Row.names
+    x$Row.names <- NULL
+  }
+  return(x)
+}
+```
+
+```{r}
+# Define the linear model and loop through the summary results.
+results <- vector(mode = "list", length = 189)
+for (i in 1:length(list_metab)) {
+  tryCatch({
+    model <- lme(metabo_conc ~ exp, random = ~ 1 | cell_line, data = list_metab[[i]], na.action = na.omit)
+    results[[i]] <- summary(model)
+  }, error = function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+# Aggregate the p values from the summary results for the linear model.
+pvalues <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  pvalues[[i]] <- df[2,5]
+}
+
+names(pvalues) <- names(list_metab)
+summary_res <- unlist(pvalues)
+summary_res <- as.data.frame(summary_res, add.rownames = True)
+
+summary_results <- merge(x = results_df, y = summary_res, by = 'row.names', all.x = TRUE)
+summary_results <- summary_results %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+
+# Aggregate the estimates from the summary results for the linear model.
+ests <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  ests[[i]] <- df[2,1]
+}
+
+names(ests) <- names(list_metab)
+est_res <- unlist(ests)
+est_res <- as.data.frame(est_res, add.rownames = True)
+
+est_res <- merge(x = results_df, y = est_res, by = 'row.names', all.x = TRUE)
+est_res <- est_res %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+est_res[,1] <- NULL
+
+# Perform correction for multiple comparisons using the FDR method.
+p.adj <- p.adjust(summary_results$summary_res, method = "fdr", n = length(summary_results$summary_res))
+names(p.adj) <- names(list_metab)
+p.adj.df <- as.data.frame(p.adj)
+
+# Combine all dataframes for final result.
+final_res <- merge.all(summary_results, est_res, p.adj.df)
+colnames(final_res) <- c("Category", "p value", "Estimate", "Adj. p value")
+write.csv(final_res,"add file path for desired folder to save results here", row.names = TRUE)
+```
+
+### Day 28
+
+Comparisons were made based on treatment groups of paroxetine hydrochloride exposure, namely "Control" and "PH" at day 28, using a mixed linear model followed by correction for multiple comparisons using the FDR method
+
+```{r}
+# Load package libraries and import the dataset to be analysed.
+rm(list = ls())
+library("tidyverse")
+PH_metabolome <- read.csv("add file path to metabo_conc.csv here")
+PH_metabolome <- PH_metabolome %>% filter(diff_time == "Day 28", exp == c("Control", "PH"))
+PH_metabolome$exp <- factor(PH_metabolome$exp, levels = c("Control", "PH"))
+list_metab <- split(PH_metabolome, PH_metabolome$metabo)
+
+results_df <- read.csv("add file path to metabo_list.csv here", row.names=1)
+
+# Load function for preparing dataframe of the model outputs:
+merge.all <- function(x, ..., by = "row.names") {
+  L <- list(...)
+  for (i in seq_along(L)) {
+    x <- merge(x, L[[i]], by = by)
+    rownames(x) <- x$Row.names
+    x$Row.names <- NULL
+  }
+  return(x)
+}
+```
+
+```{r}
+# Define the linear model and loop through the summary results.
+results <- vector(mode = "list", length = 189)
+for (i in 1:length(list_metab)) {
+  tryCatch({
+    model <- lme(metabo_conc ~ exp, random = ~ 1 | cell_line, data = list_metab[[i]], na.action = na.omit)
+    results[[i]] <- summary(model)
+  }, error = function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+# Aggregate the p values from the summary results for the linear model.
+pvalues <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  pvalues[[i]] <- df[2,5]
+}
+
+names(pvalues) <- names(list_metab)
+summary_res <- unlist(pvalues)
+summary_res <- as.data.frame(summary_res, add.rownames = True)
+
+summary_results <- merge(x = results_df, y = summary_res, by = 'row.names', all.x = TRUE)
+summary_results <- summary_results %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+
+# Aggregate the estimates from the summary results for the linear model.
+ests <- vector(mode = "list", length = 189)
+for (i in 1:length(results)) {
+  df <- as.data.frame(results[[i]][["tTable"]])
+  ests[[i]] <- df[2,1]
+}
+
+names(ests) <- names(list_metab)
+est_res <- unlist(ests)
+est_res <- as.data.frame(est_res, add.rownames = True)
+
+est_res <- merge(x = results_df, y = est_res, by = 'row.names', all.x = TRUE)
+est_res <- est_res %>% remove_rownames %>% column_to_rownames(var = "Row.names")
+est_res[,1] <- NULL
+
+# Perform correction for multiple comparisons using the FDR method.
+p.adj <- p.adjust(summary_results$summary_res, method = "fdr", n = length(summary_results$summary_res))
+names(p.adj) <- names(list_metab)
+p.adj.df <- as.data.frame(p.adj)
+
+# Combine all dataframes for final result.
+final_res <- merge.all(summary_results, est_res, p.adj.df)
+colnames(final_res) <- c("Category", "p value", "Estimate", "Adj. p value")
+write.csv(final_res,"add file path for desired folder to save results here", row.names = TRUE)
+```
