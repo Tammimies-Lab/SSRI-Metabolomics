@@ -1,4 +1,4 @@
-# Lysophosphatidylcholines are elevated after selective serotonin reuptake inhibitor exposure during neural differentiation and correlate with early neurodevelopmental symptoms
+# Elevated lysophosphatidylcholines during SSRI-induced neural differentiation correlate with early neurodevelopmental symptoms
 Abishek Arora (1,2,3), Kristina Vacy (4,5#), Cátia Marques (6#), Mihai-Ovidiu Degeratu (1,2), Francesca Mastropasqua (1,2), Jenny Humphrey (1,2), Xuan Ye (1,2), Marika Oksanen (1,2), the Barwon Infant Study Investigator Group, Peter Vuillermin (4,7), Anne-Louise Ponsonby (4,7), Ingela Lanekoff (6,8) and Kristiina Tammimies (1,2,*) 
 
 1. Center of Neurodevelopmental Disorders (KIND), Centre for Psychiatry Research, Department of Women's and Children's Health, Karolinska Institutet, and Child and Adolescent Psychiatry, Stockholm Health Care Services, Region Stockholm, Stockholm, Sweden. 
